@@ -58,8 +58,8 @@ def welcome():
         A list of temperatures from August 2016 - August 2017 from station USC00519281: <br/>
         /api/v1.0/tobs <br/>
         <br/>
-        Minimum temp, average temp, and maximum temp values for Honolulu from August 2016 - August 2017: <br/>
-        /api/v1.0/start <br/>
+        Minimum temp, maximum temp, and average temp values for Honolulu in date format YYYY-MM-DD format: <br/>
+        /api/v1.0/<start> <br/>
         '''
     ) 
 
@@ -117,15 +117,28 @@ def tobs():
 
 
 # Min, avg, and max temp
-@app.route("/api/v1.0/start")
-def trip1():
+@app.route("/api/v1.0/<start>")
+def temp_statistics(start):
     session = Session(engine)
-    last_year = dt.date(2017, 8, 23) - dt.timedelta(days=365)
-    trip_data1 = session.query(func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)).\
-        filter(Measurement.date >= last_year).all()
-    trip = list(np.ravel(trip_data1))
+
+    # Temp statistics from chosen date to end of data
+    sel = [func.min(Measurement.tobs), func.max(Measurement.tobs), func.avg(Measurement.tobs)]
+
+    statistics = session.query(*sel).\
+        filter(Measurement.date >= start).all()
     session.close()
-    return jsonify(trip)
+
+    # Create the dictionary for the statistics results
+    stat_results = []
+
+    for min, max, avg in statistics:
+        stat_dict = {}
+        stat_dict["min"] = min
+        stat_dict["max"] = max
+        stat_dict["avg"] = avg
+        stat_results.append(stat_dict)
+
+    return jsonify(stat_results)
 
 
 
